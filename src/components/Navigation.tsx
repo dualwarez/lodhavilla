@@ -7,34 +7,34 @@ const Navigation = () => {
 
   return (
     <nav className="bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="font-playfair text-2xl md:text-3xl font-bold text-lodha-green">
+            <h1 className="font-playfair text-xl md:text-2xl font-bold text-lodha-green">
               LODHA
             </h1>
           </div>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#about" className="text-lodha-green hover:text-lodha-gold transition-colors">
+          <div className="hidden md:flex items-center space-x-6">
+            <a href="#about" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
               OUR STORY
             </a>
-            <a href="#amenities" className="text-lodha-green hover:text-lodha-gold transition-colors">
+            <a href="#amenities" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
               OUR IMPACT
             </a>
-            <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors">
+            <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
               OUR PROJECTS
             </a>
           </div>
 
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             <button className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors">
-              <MessageCircle size={20} />
-              <span>CHAT</span>
+              <MessageCircle size={16} />
+              <span className="text-sm">CHAT</span>
             </button>
             <button className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors">
-              <Search size={20} />
-              <span>SEARCH</span>
+              <Search size={16} />
+              <span className="text-sm">SEARCH</span>
             </button>
           </div>
 
@@ -43,23 +43,23 @@ const Navigation = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <X size={24} className="text-lodha-green" />
+              <X size={20} className="text-lodha-green" />
             ) : (
-              <Menu size={24} className="text-lodha-green" />
+              <Menu size={20} className="text-lodha-green" />
             )}
           </button>
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-gray-200">
-            <div className="flex flex-col space-y-4 pt-4">
-              <a href="#about" className="text-lodha-green hover:text-lodha-gold transition-colors">
+          <div className="md:hidden mt-3 pb-3 border-t border-gray-200">
+            <div className="flex flex-col space-y-3 pt-3">
+              <a href="#about" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
                 OUR STORY
               </a>
-              <a href="#amenities" className="text-lodha-green hover:text-lodha-gold transition-colors">
+              <a href="#amenities" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
                 OUR IMPACT
               </a>
-              <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors">
+              <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
                 OUR PROJECTS
               </a>
             </div>
