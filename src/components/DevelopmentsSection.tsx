@@ -1,5 +1,9 @@
-
 const DevelopmentsSection = () => {
+  const scrollToEnquiry = () => {
+    const enquirySection = document.getElementById('enquire');
+    enquirySection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const features = [
     {
       title: "Premium Villas",
@@ -86,7 +90,10 @@ const DevelopmentsSection = () => {
         </div>
         
         <div className="text-center">
-          <button className="bg-lodha-green hover:bg-lodha-green-dark text-white px-6 py-3 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl">
+          <button 
+            onClick={scrollToEnquiry}
+            className="bg-lodha-green hover:bg-lodha-green-dark text-white px-6 py-3 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl"
+          >
             View Floor Plans
           </button>
         </div>

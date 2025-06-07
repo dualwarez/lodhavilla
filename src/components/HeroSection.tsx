@@ -1,4 +1,10 @@
+
 const HeroSection = () => {
+  const scrollToEnquiry = () => {
+    const enquirySection = document.getElementById('enquire');
+    enquirySection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
       backgroundImage: `url('/lovable-uploads/9a977a37-48b1-4cbb-a6c9-dd0e02512b3d.png')`
@@ -35,10 +41,16 @@ const HeroSection = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{
         animationDelay: '0.9s'
       }}>
-          <a href="#enquire" className="inline-block bg-lodha-gold hover:bg-lodha-gold-dark text-white px-8 py-3 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-2xl">
+          <button 
+            onClick={scrollToEnquiry}
+            className="inline-block bg-lodha-gold hover:bg-lodha-gold-dark text-white px-8 py-3 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-2xl"
+          >
             Book Site Visit
-          </a>
-          <button className="inline-block border-2 border-white text-white hover:bg-white hover:text-lodha-green px-8 py-3 rounded-lg font-semibold text-base transition-all duration-300">
+          </button>
+          <button 
+            onClick={scrollToEnquiry}
+            className="inline-block border-2 border-white text-white hover:bg-white hover:text-lodha-green px-8 py-3 rounded-lg font-semibold text-base transition-all duration-300"
+          >
             Download Brochure
           </button>
         </div>
