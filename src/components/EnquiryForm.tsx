@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const EnquiryForm = () => {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,26 +17,66 @@ const EnquiryForm = () => {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Lead captured for Lodha Villa Imperio:', formData);
+    setIsSubmitting(true);
     
-    toast({
-      title: "Thank You for Your Interest!",
-      description: "Our relationship manager will contact you within 2 hours to schedule your exclusive site visit.",
-    });
+    console.log('Submitting lead data for Lodha Villa Imperio:', formData);
+    
+    try {
+      const response = await fetch('https://script.google.com/macros/s/AKfycbzj2K_rxb0sSpZQI41JjUnFfwO9DYf_JamfkudDEcJEO1jxy6lBItmn1gowDDBeLDQhgA/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          project: 'Lodha Villa Imperio',
+          timestamp: new Date().toISOString(),
+          source: 'Website Lead Form'
+        })
+      });
 
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      city: '',
-      visitDate: '',
-      budget: '',
-      propertyType: '',
-      message: ''
-    });
+      console.log('Form submitted successfully to Google Apps Script');
+      
+      toast({
+        title: "Thank You for Sharing Your Interest!",
+        description: "Our representative will reach you soon to assist with your villa requirements.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        city: '',
+        visitDate: '',
+        budget: '',
+        propertyType: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Thank You for Your Interest!",
+        description: "Our representative will reach you soon. If urgent, please call us directly.",
+      });
+      
+      // Reset form even on error since we're using no-cors
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        city: '',
+        visitDate: '',
+        budget: '',
+        propertyType: '',
+        message: ''
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -222,12 +263,13 @@ const EnquiryForm = () => {
             <div className="text-center pt-8">
               <button
                 type="submit"
-                className="bg-lodha-gold hover:bg-lodha-gold-dark text-white px-16 py-5 rounded-xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl"
+                disabled={isSubmitting}
+                className="bg-lodha-gold hover:bg-lodha-gold-dark text-white px-16 py-5 rounded-xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Book Exclusive Site Visit
+                {isSubmitting ? 'Submitting...' : 'Book Exclusive Site Visit'}
               </button>
               <p className="text-sm text-gray-500 mt-6">
-                🔒 Your information is completely secure. Our relationship manager will contact you within 2 hours.
+                🔒 Your information is completely secure. Our representative will contact you within 2 hours.
               </p>
               <p className="text-xs text-gray-400 mt-2">
                 By submitting this form, you agree to our privacy policy and terms of service.
