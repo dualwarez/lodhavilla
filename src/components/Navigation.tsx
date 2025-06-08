@@ -5,14 +5,27 @@ import { Menu, X, Search, MessageCircle } from 'lucide-react';
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const scrollToEnquiry = () => {
+    const enquirySection = document.getElementById('enquire');
+    enquirySection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleChatClick = () => {
+    // Open ChatGPT with a specific prompt about Lodha Villa Imperio
+    const chatGPTUrl = "https://chat.openai.com/?q=Tell%20me%20about%20Lodha%20Villa%20Imperio%20luxury%20villas%20in%20Dombivli%20East%20Mumbai%20-%20amenities,%20pricing,%20location%20advantages";
+    window.open(chatGPTUrl, '_blank');
+  };
+
   return (
     <nav className="bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="font-playfair text-xl md:text-2xl font-bold text-lodha-green">
-              LODHA
-            </h1>
+            <img 
+              src="/lovable-uploads/f75d0ce0-77db-4169-9664-f6e3128c7c3c.png" 
+              alt="Lodha Preferred Partner" 
+              className="h-8 md:h-10"
+            />
           </div>
 
           <div className="hidden md:flex items-center space-x-6">
@@ -28,11 +41,17 @@ const Navigation = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
-            <button className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors">
+            <button 
+              onClick={handleChatClick}
+              className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors"
+            >
               <MessageCircle size={16} />
               <span className="text-sm">CHAT</span>
             </button>
-            <button className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors">
+            <button 
+              onClick={scrollToEnquiry}
+              className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors"
+            >
               <Search size={16} />
               <span className="text-sm">SEARCH</span>
             </button>
@@ -62,6 +81,20 @@ const Navigation = () => {
               <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
                 OUR PROJECTS
               </a>
+              <button 
+                onClick={handleChatClick}
+                className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors text-left"
+              >
+                <MessageCircle size={16} />
+                <span className="text-sm">CHAT</span>
+              </button>
+              <button 
+                onClick={scrollToEnquiry}
+                className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors text-left"
+              >
+                <Search size={16} />
+                <span className="text-sm">SEARCH</span>
+              </button>
             </div>
           </div>
         )}
