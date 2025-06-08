@@ -2,10 +2,15 @@
 import { useState } from 'react';
 import { Phone, Mail, User, MapPin, Calendar, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import SimpleCaptcha from './SimpleCaptcha';
+import ThankYouPage from './ThankYouPage';
 
 const EnquiryForm = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,9 +21,34 @@ const EnquiryForm = () => {
     propertyType: '',
     message: ''
   });
+  const [phoneError, setPhoneError] = useState('');
+
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^[6-9]\d{9}$/;
+    return phoneRegex.test(phone);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate phone number
+    if (!validatePhoneNumber(formData.phone)) {
+      setPhoneError('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9');
+      return;
+    }
+    
+    setPhoneError('');
+    setShowCaptcha(true);
+  };
+
+  const handleCaptchaVerify = (isVerified: boolean) => {
+    setCaptchaVerified(isVerified);
+    if (isVerified) {
+      submitForm();
+    }
+  };
+
+  const submitForm = async () => {
     setIsSubmitting(true);
     
     console.log('Submitting lead data for Lodha Villa Imperio:', formData);
@@ -47,11 +77,6 @@ const EnquiryForm = () => {
 
       console.log('Form submitted successfully to Google Apps Script');
       
-      toast({
-        title: "Thank You for Sharing Your Interest!",
-        description: "Our representative will reach you soon to assist with your villa requirements.",
-      });
-
       // Reset form
       setFormData({
         name: '',
@@ -63,6 +88,10 @@ const EnquiryForm = () => {
         propertyType: '',
         message: ''
       });
+      
+      setShowCaptcha(false);
+      setCaptchaVerified(false);
+      setShowThankYou(true);
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
@@ -81,17 +110,46 @@ const EnquiryForm = () => {
         propertyType: '',
         message: ''
       });
+      
+      setShowCaptcha(false);
+      setCaptchaVerified(false);
+      setShowThankYou(true);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    if (name === 'phone') {
+      // Only allow numbers and limit to 10 digits
+      const numericValue = value.replace(/\D/g, '').slice(0, 10);
+      setFormData({
+        ...formData,
+        [name]: numericValue
+      });
+      
+      if (phoneError && validatePhoneNumber(numericValue)) {
+        setPhoneError('');
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
+
+  const handleBackToHome = () => {
+    setShowThankYou(false);
+    setShowCaptcha(false);
+    setCaptchaVerified(false);
+  };
+
+  if (showThankYou) {
+    return <ThankYouPage onBackToHome={handleBackToHome} />;
+  }
 
   return (
     <section id="enquire" className="py-24 luxury-gradient relative overflow-hidden">
@@ -108,181 +166,197 @@ const EnquiryForm = () => {
         </div>
 
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 md:p-12 form-glow shadow-2xl">
-          <div className="text-center mb-8">
-            <h3 className="font-playfair text-2xl font-bold text-lodha-green mb-2">Get Exclusive Access</h3>
-            <p className="text-gray-600">Fill in your details for priority booking and special offers</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="relative">
-                <label htmlFor="name" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Full Name *
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
-                    placeholder="Enter your full name"
-                  />
-                </div>
+          {!showCaptcha ? (
+            <>
+              <div className="text-center mb-8">
+                <h3 className="font-playfair text-2xl font-bold text-lodha-green mb-2">Get Exclusive Access</h3>
+                <p className="text-gray-600">Fill in your details for priority booking and special offers</p>
               </div>
 
-              <div className="relative">
-                <label htmlFor="phone" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Phone Number *
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-              </div>
-            </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="relative">
+                    <label htmlFor="name" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Full Name *
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                  </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="relative">
-                <label htmlFor="email" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Email Address *
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
-                    placeholder="your.email@example.com"
-                  />
+                  <div className="relative">
+                    <label htmlFor="phone" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Your Contact Number *
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        required
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+                        placeholder="9876543210"
+                      />
+                    </div>
+                    {phoneError && <p className="text-red-500 text-sm mt-2">{phoneError}</p>}
+                  </div>
                 </div>
-              </div>
 
-              <div className="relative">
-                <label htmlFor="city" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Current City
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
-                    placeholder="Mumbai"
-                  />
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="relative">
+                    <label htmlFor="email" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+                        placeholder="your.email@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <label htmlFor="city" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Current City
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
+                      <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+                        placeholder="Mumbai"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="relative">
-                <label htmlFor="propertyType" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Villa Type
-                </label>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="relative">
+                    <label htmlFor="propertyType" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Villa Type
+                    </label>
+                    <div className="relative">
+                      <Home className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
+                      <select
+                        id="propertyType"
+                        name="propertyType"
+                        value={formData.propertyType}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg appearance-none"
+                      >
+                        <option value="">Select Villa Type</option>
+                        <option value="3bhk">3 BHK Villa</option>
+                        <option value="4bhk">4 BHK Villa</option>
+                        <option value="premium">Premium Villa</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <label htmlFor="budget" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Budget Range
+                    </label>
+                    <select
+                      id="budget"
+                      name="budget"
+                      value={formData.budget}
+                      onChange={handleChange}
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+                    >
+                      <option value="">Select Budget</option>
+                      <option value="2-3cr">₹2-3 Crores</option>
+                      <option value="3-4cr">₹3-4 Crores</option>
+                      <option value="4-5cr">₹4-5 Crores</option>
+                      <option value="5cr+">₹5+ Crores</option>
+                    </select>
+                  </div>
+
+                  <div className="relative">
+                    <label htmlFor="visitDate" className="block text-sm font-semibold text-lodha-green mb-3">
+                      Preferred Visit Date
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
+                      <input
+                        type="date"
+                        id="visitDate"
+                        name="visitDate"
+                        value={formData.visitDate}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="relative">
-                  <Home className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
-                  <select
-                    id="propertyType"
-                    name="propertyType"
-                    value={formData.propertyType}
+                  <label htmlFor="message" className="block text-sm font-semibold text-lodha-green mb-3">
+                    Additional Requirements
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    rows={4}
+                    value={formData.message}
                     onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg appearance-none"
+                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 resize-none text-lg"
+                    placeholder="Tell us about your specific requirements, preferred amenities, or any questions..."
+                  ></textarea>
+                </div>
+
+                <div className="text-center pt-8">
+                  <button
+                    type="submit"
+                    className="bg-lodha-gold hover:bg-lodha-gold-dark text-white px-16 py-5 rounded-xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl"
                   >
-                    <option value="">Select Villa Type</option>
-                    <option value="3bhk">3 BHK Villa</option>
-                    <option value="4bhk">4 BHK Villa</option>
-                    <option value="premium">Premium Villa</option>
-                  </select>
+                    Book Exclusive Site Visit
+                  </button>
+                  <p className="text-sm text-gray-500 mt-6">
+                    🔒 Your information is completely secure. Our representative will contact you within 2 hours.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    By submitting this form, you agree to our privacy policy and terms of service.
+                  </p>
                 </div>
-              </div>
-
-              <div className="relative">
-                <label htmlFor="budget" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Budget Range
-                </label>
-                <select
-                  id="budget"
-                  name="budget"
-                  value={formData.budget}
-                  onChange={handleChange}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
+              </form>
+            </>
+          ) : (
+            <div className="max-w-md mx-auto">
+              <SimpleCaptcha onVerify={handleCaptchaVerify} />
+              
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setShowCaptcha(false)}
+                  className="text-lodha-green hover:text-lodha-gold transition-colors text-sm"
                 >
-                  <option value="">Select Budget</option>
-                  <option value="2-3cr">₹2-3 Crores</option>
-                  <option value="3-4cr">₹3-4 Crores</option>
-                  <option value="4-5cr">₹4-5 Crores</option>
-                  <option value="5cr+">₹5+ Crores</option>
-                </select>
-              </div>
-
-              <div className="relative">
-                <label htmlFor="visitDate" className="block text-sm font-semibold text-lodha-green mb-3">
-                  Preferred Visit Date
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lodha-gold" size={20} />
-                  <input
-                    type="date"
-                    id="visitDate"
-                    name="visitDate"
-                    value={formData.visitDate}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 text-lg"
-                  />
-                </div>
+                  ← Back to Form
+                </button>
               </div>
             </div>
-
-            <div className="relative">
-              <label htmlFor="message" className="block text-sm font-semibold text-lodha-green mb-3">
-                Additional Requirements
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                rows={4}
-                value={formData.message}
-                onChange={handleChange}
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-lodha-gold focus:border-lodha-gold transition-all duration-300 resize-none text-lg"
-                placeholder="Tell us about your specific requirements, preferred amenities, or any questions..."
-              ></textarea>
-            </div>
-
-            <div className="text-center pt-8">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-lodha-gold hover:bg-lodha-gold-dark text-white px-16 py-5 rounded-xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Submitting...' : 'Book Exclusive Site Visit'}
-              </button>
-              <p className="text-sm text-gray-500 mt-6">
-                🔒 Your information is completely secure. Our representative will contact you within 2 hours.
-              </p>
-              <p className="text-xs text-gray-400 mt-2">
-                By submitting this form, you agree to our privacy policy and terms of service.
-              </p>
-            </div>
-          </form>
+          )}
         </div>
       </div>
     </section>
