@@ -7,6 +7,7 @@ import LocationSection from '@/components/LocationSection';
 import DevelopmentsSection from '@/components/DevelopmentsSection';
 import EnquiryForm from '@/components/EnquiryForm';
 import Footer from '@/components/Footer';
+import StaffButton from '@/components/StaffButton';
 
 const Index = () => {
   return (
@@ -19,6 +20,7 @@ const Index = () => {
       <DevelopmentsSection />
       <EnquiryForm />
       <Footer />
+      <StaffButton />
     </div>
   );
 };

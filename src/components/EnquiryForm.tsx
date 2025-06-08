@@ -24,18 +24,25 @@ const EnquiryForm = () => {
     console.log('Submitting lead data for Lodha Villa Imperio:', formData);
     
     try {
+      const submissionData = {
+        ...formData,
+        project: 'Lodha Villa Imperio',
+        timestamp: new Date().toISOString(),
+        source: 'Website Lead Form'
+      };
+
+      // Save to localStorage for staff dashboard
+      const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+      existingSubmissions.push(submissionData);
+      localStorage.setItem('formSubmissions', JSON.stringify(existingSubmissions));
+
       const response = await fetch('https://script.google.com/macros/s/AKfycbzj2K_rxb0sSpZQI41JjUnFfwO9DYf_JamfkudDEcJEO1jxy6lBItmn1gowDDBeLDQhgA/exec', {
         method: 'POST',
         mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          project: 'Lodha Villa Imperio',
-          timestamp: new Date().toISOString(),
-          source: 'Website Lead Form'
-        })
+        body: JSON.stringify(submissionData)
       });
 
       console.log('Form submitted successfully to Google Apps Script');
