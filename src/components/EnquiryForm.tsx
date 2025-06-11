@@ -51,65 +51,6 @@ const EnquiryForm = () => {
     }
   };
 
-  const sendEmail = async (submissionData: any) => {
-    try {
-      console.log('Sending email notification...');
-      
-      const emailBody = `
-New Villa Inquiry - Lodha Villa Imperio
-
-Customer Details:
-- Name: ${submissionData.name}
-- Email: ${submissionData.email || 'Not provided'}
-- Phone: ${submissionData.phone}
-- City: ${submissionData.city || 'Not provided'}
-- Budget: ${submissionData.budget || 'Not specified'}
-- Villa Type: ${submissionData.propertyType || 'Not specified'}
-- Preferred Visit Date: ${submissionData.visitDate || 'Not specified'}
-- Additional Requirements: ${submissionData.message || 'None'}
-
-Submission Time: ${new Date(submissionData.timestamp).toLocaleString('en-IN')}
-Source: Website Lead Form
-
-Please contact the customer within 2 hours as promised.
-      `;
-
-      // Using EmailJS service (free email sending service)
-      const emailData = {
-        to_email: 'dhan2work@gmail.com',
-        subject: `New Villa Inquiry from ${submissionData.name} - ${submissionData.phone}`,
-        message: emailBody,
-        from_name: 'Lodha Villa Imperio Website',
-        reply_to: submissionData.email || 'noreply@villa-imperio.com'
-      };
-
-      // Send via EmailJS public API
-      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          service_id: 'default_service',
-          template_id: 'template_default',
-          user_id: 'public_key',
-          template_params: emailData
-        })
-      });
-
-      if (response.ok) {
-        console.log('Email notification sent successfully');
-        return true;
-      } else {
-        console.warn('Email service unavailable, but form data is saved');
-        return false;
-      }
-    } catch (error) {
-      console.warn('Email sending failed, but form data is saved:', error);
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -153,30 +94,36 @@ Please contact the customer within 2 hours as promised.
     console.log('Submitting lead data for Lodha Villa Imperio:', submissionData);
     
     try {
-      // Save to localStorage first (most important for staff dashboard)
+      // Save to localStorage first (for staff dashboard)
       const localStorageSaved = saveToLocalStorage(submissionData);
       
       if (!localStorageSaved) {
         throw new Error('Failed to save data locally');
       }
 
-      // Send email notification
-      await sendEmail(submissionData);
+      // Submit to FormSubmit.co
+      const formSubmitData = new FormData();
+      formSubmitData.append('name', submissionData.name);
+      formSubmitData.append('email', submissionData.email || '');
+      formSubmitData.append('phone', submissionData.phone);
+      formSubmitData.append('city', submissionData.city || '');
+      formSubmitData.append('budget', submissionData.budget || '');
+      formSubmitData.append('propertyType', submissionData.propertyType || '');
+      formSubmitData.append('visitDate', submissionData.visitDate || '');
+      formSubmitData.append('message', submissionData.message || '');
+      formSubmitData.append('project', 'Lodha Villa Imperio');
+      formSubmitData.append('timestamp', submissionData.timestamp);
+      formSubmitData.append('source', 'Website Lead Form');
 
-      // Try to send to Google Apps Script (secondary)
-      try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbzj2K_rxb0sSpZQI41JjUnFfwO9DYf_JamfkudDEcJEO1jxy6lBItmn1gowDDBeLDQhgA/exec', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(submissionData)
-        });
+      const response = await fetch('https://formsubmit.co/el/letado', {
+        method: 'POST',
+        body: formSubmitData
+      });
 
-        console.log('Form submitted successfully to Google Apps Script');
-      } catch (externalError) {
-        console.warn('External submission failed, but data is saved locally:', externalError);
+      if (response.ok) {
+        console.log('Form submitted successfully to FormSubmit.co');
+      } else {
+        console.warn('FormSubmit.co submission failed, but data is saved locally');
       }
 
       // Reset form
