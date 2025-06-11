@@ -51,6 +51,65 @@ const EnquiryForm = () => {
     }
   };
 
+  const sendEmail = async (submissionData: any) => {
+    try {
+      console.log('Sending email notification...');
+      
+      const emailBody = `
+New Villa Inquiry - Lodha Villa Imperio
+
+Customer Details:
+- Name: ${submissionData.name}
+- Email: ${submissionData.email || 'Not provided'}
+- Phone: ${submissionData.phone}
+- City: ${submissionData.city || 'Not provided'}
+- Budget: ${submissionData.budget || 'Not specified'}
+- Villa Type: ${submissionData.propertyType || 'Not specified'}
+- Preferred Visit Date: ${submissionData.visitDate || 'Not specified'}
+- Additional Requirements: ${submissionData.message || 'None'}
+
+Submission Time: ${new Date(submissionData.timestamp).toLocaleString('en-IN')}
+Source: Website Lead Form
+
+Please contact the customer within 2 hours as promised.
+      `;
+
+      // Using EmailJS service (free email sending service)
+      const emailData = {
+        to_email: 'dhan2work@gmail.com',
+        subject: `New Villa Inquiry from ${submissionData.name} - ${submissionData.phone}`,
+        message: emailBody,
+        from_name: 'Lodha Villa Imperio Website',
+        reply_to: submissionData.email || 'noreply@villa-imperio.com'
+      };
+
+      // Send via EmailJS public API
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service_id: 'default_service',
+          template_id: 'template_default',
+          user_id: 'public_key',
+          template_params: emailData
+        })
+      });
+
+      if (response.ok) {
+        console.log('Email notification sent successfully');
+        return true;
+      } else {
+        console.warn('Email service unavailable, but form data is saved');
+        return false;
+      }
+    } catch (error) {
+      console.warn('Email sending failed, but form data is saved:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -100,6 +159,9 @@ const EnquiryForm = () => {
       if (!localStorageSaved) {
         throw new Error('Failed to save data locally');
       }
+
+      // Send email notification
+      await sendEmail(submissionData);
 
       // Try to send to Google Apps Script (secondary)
       try {
