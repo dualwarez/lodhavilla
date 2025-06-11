@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Phone, Mail, User, MapPin, Calendar, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import SimpleCaptcha from './SimpleCaptcha';
@@ -21,31 +20,6 @@ const EnquiryForm = () => {
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Configure form for FormSubmit.co on component mount
-  useEffect(() => {
-    const form = document.querySelector('form');
-    if (form) {
-      form.action = 'https://formsubmit.co/el/letado';
-      form.method = 'POST';
-      
-      // Add hidden fields for FormSubmit configuration
-      const addHiddenField = (name: string, value: string) => {
-        const existing = form.querySelector(`input[name="${name}"]`);
-        if (!existing) {
-          const hiddenInput = document.createElement('input');
-          hiddenInput.type = 'hidden';
-          hiddenInput.name = name;
-          hiddenInput.value = value;
-          form.appendChild(hiddenInput);
-        }
-      };
-
-      addHiddenField('_captcha', 'false');
-      addHiddenField('_subject', 'New Villa Inquiry - Lodha Villa Imperio');
-      addHiddenField('_template', 'table');
-    }
-  }, []);
 
   const saveToLocalStorage = (data: any): boolean => {
     try {
@@ -125,7 +99,8 @@ const EnquiryForm = () => {
       city: '',
       budget: '',
       propertyType: '',
-      visitDate: ''
+      visitDate: '',
+      message: ''
     });
     setIsCaptchaVerified(false);
     setIsLoading(false);
@@ -149,7 +124,12 @@ const EnquiryForm = () => {
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} action="https://formsubmit.co/el/letado" method="POST" className="space-y-6">
+            {/* FormSubmit Configuration Fields */}
+            <input type="hidden" name="_captcha" value="false" />
+            <input type="hidden" name="_subject" value="New Villa Inquiry - Lodha Villa Imperio" />
+            <input type="hidden" name="_template" value="table" />
+            
             {/* Project Information - Hidden Fields */}
             <input type="hidden" name="project" value="Lodha Villa Imperio" />
             <input type="hidden" name="source" value="Website Lead Form" />
