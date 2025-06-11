@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Phone, Mail, User, MapPin, Calendar, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import SimpleCaptcha from './SimpleCaptcha';
 import ThankYouPage from './ThankYouPage';
 
@@ -21,6 +22,36 @@ const EnquiryForm = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const saveToSupabase = async (data: any): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('form_submissions')
+        .insert({
+          name: data.name,
+          email: data.email || null,
+          phone: data.phone,
+          city: data.city || null,
+          budget: data.budget || null,
+          property_type: data.propertyType || null,
+          visit_date: data.visitDate || null,
+          message: data.message || null,
+          project: data.project,
+          source: data.source
+        });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        return false;
+      }
+
+      console.log('Form submission saved to Supabase successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to save to Supabase:', error);
+      return false;
+    }
+  };
+
   const saveToLocalStorage = (data: any): boolean => {
     try {
       const existingData = localStorage.getItem('villaLeads');
@@ -36,8 +67,9 @@ const EnquiryForm = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!isCaptchaVerified) {
-      e.preventDefault();
       toast({
         title: "Verification Required",
         description: "Please complete the captcha verification.",
@@ -47,7 +79,6 @@ const EnquiryForm = () => {
     }
 
     if (!formData.name || !formData.phone) {
-      e.preventDefault();
       toast({
         title: "Required Fields Missing",
         description: "Please fill in your name and phone number.",
@@ -56,7 +87,8 @@ const EnquiryForm = () => {
       return;
     }
 
-    // Save to localStorage before form submission
+    setIsLoading(true);
+
     const submissionData = {
       ...formData,
       timestamp: new Date().toISOString(),
@@ -64,30 +96,33 @@ const EnquiryForm = () => {
       source: 'Website Lead Form'
     };
 
+    // Try to save to Supabase first
+    const supabaseSaved = await saveToSupabase(submissionData);
+    
+    // Also save to localStorage as backup
     const localStorageSaved = saveToLocalStorage(submissionData);
     
-    if (!localStorageSaved) {
-      e.preventDefault();
+    if (!supabaseSaved && !localStorageSaved) {
       toast({
         title: "Error",
         description: "Unable to save your information. Please try again.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    
-    // Let the form submit naturally to FormSubmit.co
-    // The form will redirect or show thank you page
-    setTimeout(() => {
-      setShowThankYou(true);
-    }, 1000);
-
+    // Show success message
     toast({
       title: "Form Submitted Successfully!",
       description: "Your inquiry has been sent. We'll contact you within 2 hours.",
     });
+
+    // Show thank you page after a short delay
+    setTimeout(() => {
+      setShowThankYou(true);
+      setIsLoading(false);
+    }, 1000);
   };
 
   const handleBackToHome = () => {
@@ -124,17 +159,7 @@ const EnquiryForm = () => {
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
-          <form onSubmit={handleSubmit} action="https://formsubmit.co/el/letado" method="POST" className="space-y-6">
-            {/* FormSubmit Configuration Fields */}
-            <input type="hidden" name="_captcha" value="false" />
-            <input type="hidden" name="_subject" value="New Villa Inquiry - Lodha Villa Imperio" />
-            <input type="hidden" name="_template" value="table" />
-            
-            {/* Project Information - Hidden Fields */}
-            <input type="hidden" name="project" value="Lodha Villa Imperio" />
-            <input type="hidden" name="source" value="Website Lead Form" />
-            <input type="hidden" name="timestamp" value={new Date().toISOString()} />
-            
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="relative">
                 <label htmlFor="name" className="block text-sm font-semibold text-lodha-green mb-2">

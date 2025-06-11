@@ -3,43 +3,81 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Download, Users, RefreshCw } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface FormSubmission {
+  id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string;
-  city: string;
-  budget: string;
-  visitDate: string;
-  propertyType: string;
-  message: string;
-  timestamp: string;
+  city: string | null;
+  budget: string | null;
+  visit_date: string | null;
+  property_type: string | null;
+  message: string | null;
+  project: string;
+  source: string;
+  created_at: string;
 }
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadSubmissions = () => {
+  const loadSubmissions = async () => {
     setIsLoading(true);
-    console.log('Loading submissions from localStorage...');
+    console.log('Loading submissions from Supabase...');
     
     try {
-      const savedSubmissions = localStorage.getItem('formSubmissions');
-      console.log('Raw localStorage data:', savedSubmissions);
-      
-      if (savedSubmissions) {
-        const parsedSubmissions = JSON.parse(savedSubmissions);
-        console.log('Parsed submissions:', parsedSubmissions);
-        setSubmissions(parsedSubmissions);
+      const { data, error } = await supabase
+        .from('form_submissions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({
+          title: "Error loading data",
+          description: "Failed to load submissions from database. Check console for details.",
+          variant: "destructive",
+        });
+        
+        // Fallback to localStorage
+        const savedSubmissions = localStorage.getItem('formSubmissions');
+        if (savedSubmissions) {
+          const parsedSubmissions = JSON.parse(savedSubmissions);
+          setSubmissions(parsedSubmissions);
+        } else {
+          setSubmissions([]);
+        }
       } else {
-        console.log('No submissions found in localStorage');
-        setSubmissions([]);
+        console.log('Loaded submissions from Supabase:', data);
+        setSubmissions(data || []);
       }
     } catch (error) {
       console.error('Error loading submissions:', error);
-      setSubmissions([]);
+      toast({
+        title: "Error",
+        description: "Failed to connect to database. Using local data if available.",
+        variant: "destructive",
+      });
+      
+      // Fallback to localStorage
+      try {
+        const savedSubmissions = localStorage.getItem('formSubmissions');
+        if (savedSubmissions) {
+          const parsedSubmissions = JSON.parse(savedSubmissions);
+          setSubmissions(parsedSubmissions);
+        } else {
+          setSubmissions([]);
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError);
+        setSubmissions([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -57,19 +95,8 @@ const StaffDashboard = () => {
     // Set up an interval to refresh data every 30 seconds
     const interval = setInterval(loadSubmissions, 30000);
 
-    // Listen for storage changes from other tabs
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'formSubmissions') {
-        console.log('Storage change detected, reloading submissions...');
-        loadSubmissions();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
     return () => {
       clearInterval(interval);
-      window.removeEventListener('storage', handleStorageChange);
     };
   }, [navigate]);
 
@@ -101,7 +128,7 @@ const StaffDashboard = () => {
       return;
     }
 
-    const headers = ['Full Name', 'Email', 'Phone', 'City', 'Budget', 'Visit Date', 'Property Type', 'Message', 'Submission Date'];
+    const headers = ['Full Name', 'Email', 'Phone', 'City', 'Budget', 'Visit Date', 'Property Type', 'Message', 'Project', 'Source', 'Submission Date'];
     const csvContent = [
       headers.join(','),
       ...submissions.map(sub => [
@@ -110,10 +137,12 @@ const StaffDashboard = () => {
         sub.phone || '',
         sub.city || '',
         sub.budget || '',
-        sub.visitDate || '',
-        sub.propertyType || '',
+        sub.visit_date || '',
+        sub.property_type || '',
         sub.message || '',
-        formatDate(sub.timestamp)
+        sub.project || '',
+        sub.source || '',
+        formatDate(sub.created_at)
       ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
 
@@ -195,13 +224,15 @@ const StaffDashboard = () => {
                   <TableHead className="w-[120px]">Visit Date</TableHead>
                   <TableHead className="w-[120px]">Property Type</TableHead>
                   <TableHead className="w-[200px]">Message</TableHead>
+                  <TableHead className="w-[100px]">Project</TableHead>
+                  <TableHead className="w-[100px]">Source</TableHead>
                   <TableHead className="w-[180px]">Submission Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {submissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12">
+                    <TableCell colSpan={11} className="text-center py-12">
                       <div className="text-gray-500">
                         {isLoading ? (
                           <div className="flex items-center justify-center space-x-2">
@@ -218,27 +249,27 @@ const StaffDashboard = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  submissions
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                    .map((submission, index) => (
-                      <TableRow key={index} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">{submission.name || '-'}</TableCell>
-                        <TableCell className="break-all">{submission.email || '-'}</TableCell>
-                        <TableCell>{submission.phone || '-'}</TableCell>
-                        <TableCell>{submission.city || '-'}</TableCell>
-                        <TableCell>{submission.budget || '-'}</TableCell>
-                        <TableCell>{submission.visitDate || '-'}</TableCell>
-                        <TableCell>{submission.propertyType || '-'}</TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="truncate" title={submission.message}>
-                            {submission.message || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-600">
-                          {formatDate(submission.timestamp)}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                  submissions.map((submission) => (
+                    <TableRow key={submission.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">{submission.name || '-'}</TableCell>
+                      <TableCell className="break-all">{submission.email || '-'}</TableCell>
+                      <TableCell>{submission.phone || '-'}</TableCell>
+                      <TableCell>{submission.city || '-'}</TableCell>
+                      <TableCell>{submission.budget || '-'}</TableCell>
+                      <TableCell>{submission.visit_date || '-'}</TableCell>
+                      <TableCell>{submission.property_type || '-'}</TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate" title={submission.message || ''}>
+                          {submission.message || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{submission.project || '-'}</TableCell>
+                      <TableCell className="text-sm">{submission.source || '-'}</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {formatDate(submission.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -251,7 +282,7 @@ const StaffDashboard = () => {
             <summary className="cursor-pointer font-medium">Debug Information</summary>
             <div className="mt-2">
               <p>Total submissions in state: {submissions.length}</p>
-              <p>localStorage key exists: {localStorage.getItem('formSubmissions') ? 'Yes' : 'No'}</p>
+              <p>Data source: Supabase database</p>
               <p>Last refresh: {new Date().toLocaleString('en-IN')}</p>
             </div>
           </details>
