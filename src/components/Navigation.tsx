@@ -1,99 +1,115 @@
 
 import { useState } from 'react';
-import { Menu, X, Search, MessageCircle } from 'lucide-react';
+import { Menu, X, MapPin, Phone, Mail } from 'lucide-react';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const scrollToEnquiry = () => {
-    const enquirySection = document.getElementById('enquire');
-    enquirySection?.scrollIntoView({ behavior: 'smooth' });
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleChatClick = () => {
-    // Open ChatGPT with a specific prompt about Lodha Villa Imperio
-    const chatGPTUrl = "https://chat.openai.com/?q=Tell%20me%20about%20Lodha%20Villa%20Imperio%20luxury%20villas%20in%20Dombivli%20East%20Mumbai%20-%20amenities,%20pricing,%20location%20advantages";
-    window.open(chatGPTUrl, '_blank');
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false);
   };
 
   return (
-    <nav className="bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0 flex items-center">
             <img 
-              src="/lovable-uploads/f75d0ce0-77db-4169-9664-f6e3128c7c3c.png" 
+              src="/lovable-uploads/3e44318b-c5cb-4096-b5ed-9447a8149154.png" 
               alt="Lodha Preferred Partner" 
-              className="h-8 md:h-10"
+              className="h-12 w-auto"
             />
           </div>
 
-          <div className="hidden md:flex items-center space-x-6">
-            <a href="#about" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
-              OUR STORY
-            </a>
-            <a href="#amenities" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
-              OUR IMPACT
-            </a>
-            <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
-              OUR PROJECTS
-            </a>
+          {/* Desktop Navigation */}
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-baseline space-x-8">
+              <button
+                onClick={() => scrollToSection('home')}
+                className="text-gray-700 hover:text-lodha-green px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Home
+              </button>
+              <button
+                onClick={() => scrollToSection('about')}
+                className="text-gray-700 hover:text-lodha-green px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Our Story
+              </button>
+              <button
+                onClick={() => scrollToSection('developments')}
+                className="text-gray-700 hover:text-lodha-green px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Developments
+              </button>
+              <button
+                onClick={() => scrollToSection('location')}
+                className="text-gray-700 hover:text-lodha-green px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Location
+              </button>
+              <button
+                onClick={() => scrollToSection('contact')}
+                className="bg-lodha-green text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-lodha-green-dark transition-colors"
+              >
+                Contact Us
+              </button>
+            </div>
           </div>
 
-          <div className="hidden md:flex items-center space-x-3">
-            <button 
-              onClick={handleChatClick}
-              className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors"
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              onClick={toggleMenu}
+              className="text-gray-700 hover:text-lodha-green p-2"
             >
-              <MessageCircle size={16} />
-              <span className="text-sm">CHAT</span>
-            </button>
-            <button 
-              onClick={scrollToEnquiry}
-              className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors"
-            >
-              <Search size={16} />
-              <span className="text-sm">SEARCH</span>
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
-
-          <button
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? (
-              <X size={20} className="text-lodha-green" />
-            ) : (
-              <Menu size={20} className="text-lodha-green" />
-            )}
-          </button>
         </div>
 
+        {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden mt-3 pb-3 border-t border-gray-200">
-            <div className="flex flex-col space-y-3 pt-3">
-              <a href="#about" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
-                OUR STORY
-              </a>
-              <a href="#amenities" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
-                OUR IMPACT
-              </a>
-              <a href="#location" className="text-lodha-green hover:text-lodha-gold transition-colors text-sm">
-                OUR PROJECTS
-              </a>
-              <button 
-                onClick={handleChatClick}
-                className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors text-left"
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+              <button
+                onClick={() => scrollToSection('home')}
+                className="text-gray-700 hover:text-lodha-green block px-3 py-2 text-base font-medium w-full text-left"
               >
-                <MessageCircle size={16} />
-                <span className="text-sm">CHAT</span>
+                Home
               </button>
-              <button 
-                onClick={scrollToEnquiry}
-                className="flex items-center space-x-2 text-lodha-green hover:text-lodha-gold transition-colors text-left"
+              <button
+                onClick={() => scrollToSection('about')}
+                className="text-gray-700 hover:text-lodha-green block px-3 py-2 text-base font-medium w-full text-left"
               >
-                <Search size={16} />
-                <span className="text-sm">SEARCH</span>
+                Our Story
+              </button>
+              <button
+                onClick={() => scrollToSection('developments')}
+                className="text-gray-700 hover:text-lodha-green block px-3 py-2 text-base font-medium w-full text-left"
+              >
+                Developments
+              </button>
+              <button
+                onClick={() => scrollToSection('location')}
+                className="text-gray-700 hover:text-lodha-green block px-3 py-2 text-base font-medium w-full text-left"
+              >
+                Location
+              </button>
+              <button
+                onClick={() => scrollToSection('contact')}
+                className="bg-lodha-green text-white block px-3 py-2 rounded-lg text-base font-medium w-full text-left hover:bg-lodha-green-dark transition-colors"
+              >
+                Contact Us
               </button>
             </div>
           </div>
