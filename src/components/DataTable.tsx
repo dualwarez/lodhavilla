@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
@@ -80,7 +80,7 @@ const DataTable = ({ submissions, isLoading, searchTerm, onSearchChange }: DataT
   };
 
   // Reset to page 1 when search changes
-  useState(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
