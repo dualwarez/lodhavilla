@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Download, Users, RefreshCw } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import DataTable from '@/components/DataTable';
 
 interface FormSubmission {
   id: string;
@@ -26,9 +26,10 @@ const StaffDashboard = () => {
   const { toast } = useToast();
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const loadSubmissions = async () => {
-    setIsLoading(true);
     console.log('Loading submissions from Supabase...');
     
     try {
@@ -56,6 +57,7 @@ const StaffDashboard = () => {
       } else {
         console.log('Loaded submissions from Supabase:', data);
         setSubmissions(data || []);
+        setLastRefresh(new Date());
       }
     } catch (error) {
       console.error('Error loading submissions:', error);
@@ -92,39 +94,49 @@ const StaffDashboard = () => {
 
     loadSubmissions();
 
-    // Set up an interval to refresh data every 30 seconds
+    // Set up real-time subscription for new submissions
+    const channel = supabase
+      .channel('form_submissions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'form_submissions'
+        },
+        (payload) => {
+          console.log('New submission received:', payload.new);
+          setSubmissions(prev => [payload.new as FormSubmission, ...prev]);
+          setLastRefresh(new Date());
+          toast({
+            title: "New submission received",
+            description: `Form submitted by ${(payload.new as FormSubmission).name}`,
+          });
+        }
+      )
+      .subscribe();
+
+    // Set up an interval to refresh data every 30 seconds as backup
     const interval = setInterval(loadSubmissions, 30000);
 
     return () => {
+      supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleLogout = () => {
     localStorage.removeItem('staffLoggedIn');
     navigate('/');
   };
 
-  const formatDate = (timestamp: string) => {
-    try {
-      return new Date(timestamp).toLocaleString('en-IN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'Asia/Kolkata'
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return timestamp;
-    }
-  };
-
   const exportToCSV = () => {
     if (submissions.length === 0) {
-      alert('No data to export');
+      toast({
+        title: "No data to export",
+        description: "There are no submissions to export.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -142,7 +154,15 @@ const StaffDashboard = () => {
         sub.message || '',
         sub.project || '',
         sub.source || '',
-        formatDate(sub.created_at)
+        new Date(sub.created_at).toLocaleString('en-IN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZone: 'Asia/Kolkata'
+        })
       ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
 
@@ -153,21 +173,26 @@ const StaffDashboard = () => {
     a.download = `villa-inquiries-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export successful",
+      description: `Exported ${submissions.length} submissions to CSV`,
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
             <div className="flex items-center space-x-3">
               <Users className="text-lodha-green" size={24} />
-              <h1 className="font-playfair text-2xl font-bold text-lodha-green">Staff Dashboard</h1>
+              <h1 className="font-playfair text-xl sm:text-2xl font-bold text-lodha-green">Staff Dashboard</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={loadSubmissions}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
                 disabled={isLoading}
               >
                 <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -175,7 +200,7 @@ const StaffDashboard = () => {
               </button>
               <button
                 onClick={exportToCSV}
-                className="flex items-center space-x-2 bg-lodha-gold hover:bg-lodha-gold-dark text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-2 bg-lodha-gold hover:bg-lodha-gold-dark text-white px-3 py-2 rounded-lg transition-colors text-sm"
                 disabled={submissions.length === 0}
               >
                 <Download size={16} />
@@ -183,7 +208,7 @@ const StaffDashboard = () => {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
               >
                 <LogOut size={16} />
                 <span>Logout</span>
@@ -193,86 +218,32 @@ const StaffDashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b">
-            <div className="flex justify-between items-center">
+          <div className="p-4 sm:p-6 border-b">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Villa Inquiries</h2>
-                <p className="text-gray-600 mt-1">
-                  Total submissions: {submissions.length}
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Villa Inquiries</h2>
+                <p className="text-gray-600 mt-1 text-sm sm:text-base">
+                  Total submissions: <span className="font-semibold text-lodha-green">{submissions.length}</span>
                   {isLoading && <span className="ml-2 text-blue-600">(Loading...)</span>}
                 </p>
               </div>
               {submissions.length > 0 && (
-                <div className="text-sm text-gray-500">
-                  Last updated: {new Date().toLocaleTimeString('en-IN')}
+                <div className="text-xs sm:text-sm text-gray-500">
+                  Last updated: {lastRefresh.toLocaleTimeString('en-IN')}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Full Name</TableHead>
-                  <TableHead className="w-[200px]">Email</TableHead>
-                  <TableHead className="w-[120px]">Phone</TableHead>
-                  <TableHead className="w-[100px]">City</TableHead>
-                  <TableHead className="w-[120px]">Budget</TableHead>
-                  <TableHead className="w-[120px]">Visit Date</TableHead>
-                  <TableHead className="w-[120px]">Property Type</TableHead>
-                  <TableHead className="w-[200px]">Message</TableHead>
-                  <TableHead className="w-[100px]">Project</TableHead>
-                  <TableHead className="w-[100px]">Source</TableHead>
-                  <TableHead className="w-[180px]">Submission Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {submissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} className="text-center py-12">
-                      <div className="text-gray-500">
-                        {isLoading ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <RefreshCw size={20} className="animate-spin" />
-                            <span>Loading submissions...</span>
-                          </div>
-                        ) : (
-                          <div>
-                            <p className="text-lg mb-2">No submissions yet</p>
-                            <p className="text-sm">Form submissions will appear here automatically</p>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  submissions.map((submission) => (
-                    <TableRow key={submission.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">{submission.name || '-'}</TableCell>
-                      <TableCell className="break-all">{submission.email || '-'}</TableCell>
-                      <TableCell>{submission.phone || '-'}</TableCell>
-                      <TableCell>{submission.city || '-'}</TableCell>
-                      <TableCell>{submission.budget || '-'}</TableCell>
-                      <TableCell>{submission.visit_date || '-'}</TableCell>
-                      <TableCell>{submission.property_type || '-'}</TableCell>
-                      <TableCell className="max-w-xs">
-                        <div className="truncate" title={submission.message || ''}>
-                          {submission.message || '-'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{submission.project || '-'}</TableCell>
-                      <TableCell className="text-sm">{submission.source || '-'}</TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {formatDate(submission.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="p-4 sm:p-6">
+            <DataTable 
+              submissions={submissions}
+              isLoading={isLoading}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
           </div>
         </div>
 
@@ -280,10 +251,11 @@ const StaffDashboard = () => {
         <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
           <details>
             <summary className="cursor-pointer font-medium">Debug Information</summary>
-            <div className="mt-2">
+            <div className="mt-2 space-y-1">
               <p>Total submissions in state: {submissions.length}</p>
-              <p>Data source: Supabase database</p>
-              <p>Last refresh: {new Date().toLocaleString('en-IN')}</p>
+              <p>Data source: Supabase database with real-time updates</p>
+              <p>Last refresh: {lastRefresh.toLocaleString('en-IN')}</p>
+              <p>Current search: {searchTerm || 'None'}</p>
             </div>
           </details>
         </div>
